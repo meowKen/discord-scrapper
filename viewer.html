@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discord Data Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #36393f;
+            color: #dcddde;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Server List */
+        .server-list {
+            width: 72px;
+            background-color: #202225;
+            overflow-y: auto;
+            padding: 12px 0;
+        }
+
+        .server-icon {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 8px;
+            background-color: #36393f;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 600;
+            font-size: 18px;
+            color: #dcddde;
+        }
+
+        .server-icon:hover {
+            border-radius: 16px;
+            background-color: #5865f2;
+            color: white;
+        }
+
+        .server-icon.active {
+            border-radius: 16px;
+            background-color: #5865f2;
+            color: white;
+        }
+
+        /* Channel List */
+        .channel-list {
+            width: 240px;
+            background-color: #2f3136;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .server-header {
+            height: 48px;
+            padding: 0 16px;
+            border-bottom: 1px solid #202225;
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .server-header:hover {
+            background-color: #34373c;
+        }
+
+        .channels-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 0;
+        }
+
+        .channel-item {
+            padding: 6px 8px 6px 16px;
+            margin: 1px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            color: #96989d;
+            font-size: 16px;
+        }
+
+        .channel-item:hover {
+            background-color: #3a3c43;
+            color: #dcddde;
+        }
+
+        .channel-item.active {
+            background-color: #404249;
+            color: white;
+        }
+
+        .channel-icon {
+            margin-right: 6px;
+            font-size: 20px;
+            color: #96989d;
+        }
+
+        .channel-name {
+            font-weight: 500;
+        }
+
+        .channel-item .message-count {
+            margin-left: auto;
+            font-size: 12px;
+            color: #72767d;
+        }
+
+        /* Chat Area */
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #36393f;
+        }
+
+        .chat-header {
+            height: 48px;
+            padding: 0 16px;
+            border-bottom: 1px solid #202225;
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .chat-header .channel-icon {
+            margin-right: 8px;
+            color: #96989d;
+        }
+
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .message {
+            display: flex;
+            padding: 2px 0;
+            margin-bottom: 16px;
+        }
+
+        .message:hover {
+            background-color: #32353b;
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 16px;
+            background: linear-gradient(135deg, #5865f2, #3ba55d);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .message-content {
+            flex: 1;
+        }
+
+        .message-header {
+            display: flex;
+            align-items: baseline;
+            margin-bottom: 4px;
+        }
+
+        .message-author {
+            font-weight: 600;
+            color: #dcddde;
+            margin-right: 8px;
+            cursor: pointer;
+        }
+
+        .message-author:hover {
+            text-decoration: underline;
+        }
+
+        .message-author.bot {
+            color: #5865f2;
+        }
+
+        .bot-tag {
+            background-color: #5865f2;
+            color: white;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 4px;
+            border-radius: 3px;
+            margin-left: 4px;
+            vertical-align: middle;
+        }
+
+        .message-timestamp {
+            font-size: 12px;
+            color: #72767d;
+            font-weight: 400;
+        }
+
+        .message-text {
+            color: #dcddde;
+            line-height: 1.375;
+            word-wrap: break-word;
+        }
+
+        .message-attachment {
+            margin-top: 8px;
+            max-width: 400px;
+        }
+
+        .message-attachment img {
+            max-width: 100%;
+            border-radius: 4px;
+        }
+
+        .message-attachment a {
+            color: #00aff4;
+            text-decoration: none;
+        }
+
+        .message-attachment a:hover {
+            text-decoration: underline;
+        }
+
+        .message-embed {
+            margin-top: 8px;
+            border-left: 4px solid #202225;
+            background-color: #2f3136;
+            border-radius: 4px;
+            padding: 8px 12px;
+            max-width: 520px;
+        }
+
+        .message-reactions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 8px;
+        }
+
+        .reaction {
+            background-color: #2f3136;
+            border: 1px solid #202225;
+            border-radius: 8px;
+            padding: 4px 8px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* File Upload Area */
+        .upload-area {
+            padding: 16px;
+            background-color: #2f3136;
+            border-bottom: 1px solid #202225;
+            text-align: center;
+        }
+
+        .upload-button {
+            background-color: #5865f2;
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .upload-button:hover {
+            background-color: #4752c4;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 16px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background-color: #2e3136;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background-color: #202225;
+            border: 4px solid #2e3136;
+            border-radius: 8px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background-color: #1a1c1f;
+        }
+
+        /* Welcome Screen */
+        .welcome-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #72767d;
+        }
+
+        .welcome-screen h2 {
+            color: #dcddde;
+            margin-bottom: 16px;
+            font-size: 32px;
+        }
+
+        .welcome-screen p {
+            margin-bottom: 8px;
+        }
+
+        /* Stats */
+        .stats {
+            padding: 16px;
+            background-color: #2f3136;
+            border-top: 1px solid #202225;
+            font-size: 12px;
+            color: #72767d;
+            text-align: center;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #72767d;
+        }
+
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: #ed4245;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="server-list" id="serverList">
+            <!-- Servers will be loaded here -->
+        </div>
+
+        <div class="channel-list">
+            <div class="server-header" id="serverHeader">
+                Select a server
+            </div>
+            <div class="channels-container" id="channelsList">
+                <!-- Channels will be loaded here -->
+            </div>
+            <div class="stats" id="stats">
+                No data loaded
+            </div>
+        </div>
+
+        <div class="chat-area">
+            <div class="upload-area">
+                <label for="fileInput" class="upload-button">
+                    📁 Load Discord Data JSON
+                </label>
+                <input type="file" id="fileInput" accept=".json" />
+            </div>
+            <div class="chat-header" id="chatHeader">
+                <span class="channel-icon">#</span>
+                <span>Welcome</span>
+            </div>
+            <div class="messages-container" id="messagesContainer">
+                <div class="welcome-screen">
+                    <h2>📊 Discord Data Viewer</h2>
+                    <p>Load a Discord data export JSON file to view your messages</p>
+                    <p>Click the button above to get started</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let discordData = null;
+        let currentServerIndex = 0;
+        let currentChannelIndex = 0;
+
+        // File input handler
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    try {
+                        discordData = JSON.parse(event.target.result);
+                        loadServers();
+                        showStats();
+                    } catch (error) {
+                        showError('Failed to parse JSON file: ' + error.message);
+                    }
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        function loadServers() {
+            const serverList = document.getElementById('serverList');
+            serverList.innerHTML = '';
+
+            discordData.forEach((serverData, index) => {
+                const serverIcon = document.createElement('div');
+                serverIcon.className = 'server-icon';
+                serverIcon.textContent = serverData.guild.name.charAt(0).toUpperCase();
+                serverIcon.title = serverData.guild.name;
+                
+                if (index === 0) {
+                    serverIcon.classList.add('active');
+                }
+
+                serverIcon.addEventListener('click', () => {
+                    document.querySelectorAll('.server-icon').forEach(s => s.classList.remove('active'));
+                    serverIcon.classList.add('active');
+                    currentServerIndex = index;
+                    loadChannels(index);
+                });
+
+                serverList.appendChild(serverIcon);
+            });
+
+            // Load first server by default
+            if (discordData.length > 0) {
+                loadChannels(0);
+            }
+        }
+
+        function loadChannels(serverIndex) {
+            const serverData = discordData[serverIndex];
+            const serverHeader = document.getElementById('serverHeader');
+            const channelsList = document.getElementById('channelsList');
+
+            serverHeader.textContent = serverData.guild.name;
+            channelsList.innerHTML = '';
+
+            if (serverData.channels.length === 0) {
+                channelsList.innerHTML = '<div style="padding: 16px; color: #72767d;">No channels available</div>';
+                return;
+            }
+
+            serverData.channels.forEach((channel, index) => {
+                const channelItem = document.createElement('div');
+                channelItem.className = 'channel-item';
+                
+                if (index === 0) {
+                    channelItem.classList.add('active');
+                }
+
+                channelItem.innerHTML = `
+                    <span class="channel-icon">#</span>
+                    <span class="channel-name">${escapeHtml(channel.name)}</span>
+                    <span class="message-count">${channel.messageCount}</span>
+                `;
+
+                channelItem.addEventListener('click', () => {
+                    document.querySelectorAll('.channel-item').forEach(c => c.classList.remove('active'));
+                    channelItem.classList.add('active');
+                    currentChannelIndex = index;
+                    loadMessages(serverIndex, index);
+                });
+
+                channelsList.appendChild(channelItem);
+            });
+
+            // Load first channel by default
+            if (serverData.channels.length > 0) {
+                loadMessages(serverIndex, 0);
+            }
+        }
+
+        function loadMessages(serverIndex, channelIndex) {
+            const serverData = discordData[serverIndex];
+            const channel = serverData.channels[channelIndex];
+            const chatHeader = document.getElementById('chatHeader');
+            const messagesContainer = document.getElementById('messagesContainer');
+
+            chatHeader.innerHTML = `
+                <span class="channel-icon">#</span>
+                <span>${escapeHtml(channel.name)}</span>
+            `;
+
+            messagesContainer.innerHTML = '';
+
+            if (channel.messages.length === 0) {
+                messagesContainer.innerHTML = '<div class="loading">No messages in this channel</div>';
+                return;
+            }
+
+            // Reverse to show oldest first
+            const messages = [...channel.messages].reverse();
+
+            messages.forEach(msg => {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message';
+
+                const avatarInitial = msg.author.username.charAt(0).toUpperCase();
+                const timestamp = new Date(msg.timestamp).toLocaleString();
+
+                let messageHTML = `
+                    <div class="message-avatar">${avatarInitial}</div>
+                    <div class="message-content">
+                        <div class="message-header">
+                            <span class="message-author ${msg.author.bot ? 'bot' : ''}">${escapeHtml(msg.author.username)}</span>
+                            ${msg.author.bot ? '<span class="bot-tag">BOT</span>' : ''}
+                            <span class="message-timestamp">${timestamp}</span>
+                        </div>
+                        <div class="message-text">${escapeHtml(msg.content) || '<em style="color: #72767d;">No text content</em>'}</div>
+                `;
+
+                // Attachments
+                if (msg.attachments && msg.attachments.length > 0) {
+                    msg.attachments.forEach(att => {
+                        messageHTML += `
+                            <div class="message-attachment">
+                                ${att.filename.match(/\.(jpg|jpeg|png|gif|webp)$/i) 
+                                    ? `<img src="${att.url}" alt="${escapeHtml(att.filename)}" />`
+                                    : `<a href="${att.url}" target="_blank">📎 ${escapeHtml(att.filename)} (${formatBytes(att.size)})</a>`
+                                }
+                            </div>
+                        `;
+                    });
+                }
+
+                // Embeds
+                if (msg.embeds && msg.embeds.length > 0) {
+                    msg.embeds.forEach(embed => {
+                        messageHTML += '<div class="message-embed">📰 Embed content</div>';
+                    });
+                }
+
+                // Reactions
+                if (msg.reactions && msg.reactions.length > 0) {
+                    messageHTML += '<div class="message-reactions">';
+                    msg.reactions.forEach(reaction => {
+                        messageHTML += `<div class="reaction">${reaction.emoji?.name || '👍'} ${reaction.count}</div>`;
+                    });
+                    messageHTML += '</div>';
+                }
+
+                messageHTML += '</div>';
+                messageDiv.innerHTML = messageHTML;
+                messagesContainer.appendChild(messageDiv);
+            });
+
+            // Scroll to bottom
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function showStats() {
+            const stats = document.getElementById('stats');
+            let totalMessages = 0;
+            let totalChannels = 0;
+
+            discordData.forEach(server => {
+                totalChannels += server.channels.length;
+                server.channels.forEach(channel => {
+                    totalMessages += channel.messageCount;
+                });
+            });
+
+            stats.textContent = `${discordData.length} servers • ${totalChannels} channels • ${totalMessages.toLocaleString()} messages`;
+        }
+
+        function showError(message) {
+            const messagesContainer = document.getElementById('messagesContainer');
+            messagesContainer.innerHTML = `<div class="error">${escapeHtml(message)}</div>`;
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+    </script>
+</body>
+</html>

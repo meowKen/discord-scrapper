@@ -1,6 +1,6 @@
 # Discord Message Scraper
 
-An interactive Node.js tool to extract messages from your Discord servers. This script allows you to selectively scrape messages from Discord servers you're a member of.
+An interactive Node.js tool to extract messages from your Discord servers. This script allows you to selectively scrape messages from Discord servers you're a member of, and includes a Discord-style viewer to browse the extracted data.
 
 ## ⚠️ Important Disclaimers
 
@@ -23,6 +23,7 @@ An interactive Node.js tool to extract messages from your Discord servers. This 
 - ✅ Automatic rate limit protection
 - ✅ Timestamped output files
 - ✅ Saves progress after each server
+- ✅ **Built-in Discord-style viewer** to browse extracted messages
 
 ## 📋 Prerequisites
 
@@ -202,7 +203,34 @@ All files are saved to the `output/` directory at the project root, which is aut
    ]
    ```
 
-## 🔍 Discord API Endpoints Used
+## � Viewing Extracted Data
+
+The project includes a Discord-style viewer to browse your extracted messages:
+
+### Using the Viewer
+
+1. **Open the viewer**: Open `viewer.html` in your web browser (just double-click the file)
+
+2. **Load your data**: Click the "📁 Load Discord Data JSON" button and select a JSON file from the `output/` directory
+
+3. **Browse your data**:
+   - **Server list** (left sidebar): Click server icons to switch between servers
+   - **Channel list** (middle): Click channels to view their messages
+   - **Messages** (right): Scroll through messages with Discord-like styling
+
+### Features
+
+- ✅ **Discord-style UI**: Authentic Discord look and feel with dark theme
+- ✅ **Server & channel navigation**: Easy browsing through your data
+- ✅ **Message display**: Shows author, timestamp, content, attachments, and reactions
+- ✅ **Bot badges**: Identifies bot messages
+- ✅ **Attachment preview**: Images display inline, files show as download links
+- ✅ **Statistics**: Shows total servers, channels, and messages at the bottom
+- ✅ **Fully client-side**: No server required, works offline
+
+The viewer is a single HTML file with no dependencies - just open it and load your data!
+
+## �🔍 Discord API Endpoints Used
 
 The script uses the following Discord API v10 endpoints:
 
