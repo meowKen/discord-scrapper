@@ -129,6 +129,7 @@
         /* Chat Area */
         .chat-area {
             flex: 1;
+            min-width: 0;
             display: flex;
             flex-direction: column;
             background-color: #36393f;
@@ -152,6 +153,7 @@
         .messages-container {
             flex: 1;
             overflow-y: auto;
+            overflow-x: hidden;
             padding: 16px;
         }
 
@@ -159,6 +161,7 @@
             display: flex;
             padding: 2px 0;
             margin-bottom: 16px;
+            min-width: 0;
         }
 
         .message:hover {
@@ -181,6 +184,8 @@
 
         .message-content {
             flex: 1;
+            min-width: 0;
+            overflow: hidden;
         }
 
         .message-header {
@@ -225,6 +230,8 @@
             color: #dcddde;
             line-height: 1.375;
             word-wrap: break-word;
+            overflow-wrap: break-word;
+            word-break: break-word;
         }
 
         .message-attachment {
@@ -240,6 +247,11 @@
         .message-attachment a {
             color: #00aff4;
             text-decoration: none;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            word-break: break-all;
+            display: inline-block;
+            max-width: 100%;
         }
 
         .message-attachment a:hover {
@@ -279,6 +291,13 @@
             background-color: #2f3136;
             border-bottom: 1px solid #202225;
             text-align: center;
+            border: 2px dashed transparent;
+            transition: all 0.3s ease;
+        }
+
+        .upload-area.drag-over {
+            background-color: #383b42;
+            border-color: #5865f2;
         }
 
         .upload-button {
@@ -290,9 +309,14 @@
             cursor: pointer;
             font-size: 14px;
             font-weight: 600;
+            pointer-events: none;
         }
 
         .upload-button:hover {
+            background-color: #4752c4;
+        }
+
+        .upload-area:hover .upload-button {
             background-color: #4752c4;
         }
 
@@ -410,19 +434,57 @@
         document.getElementById('fileInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    try {
-                        discordData = JSON.parse(event.target.result);
-                        loadServers();
-                        showStats();
-                    } catch (error) {
-                        showError('Failed to parse JSON file: ' + error.message);
-                    }
-                };
-                reader.readAsText(file);
+                loadFile(file);
             }
         });
+
+        // Drag and drop functionality
+        const uploadArea = document.querySelector('.upload-area');
+        
+        uploadArea.addEventListener('click', function() {
+            document.getElementById('fileInput').click();
+        });
+
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadArea.classList.add('drag-over');
+        });
+
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadArea.classList.remove('drag-over');
+        });
+
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadArea.classList.remove('drag-over');
+            
+            const file = e.dataTransfer.files[0];
+            if (file && file.type === 'application/json') {
+                loadFile(file);
+            } else {
+                showError('Please drop a valid JSON file');
+            }
+        });
+
+        function loadFile(file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    discordData = JSON.parse(event.target.result);
+                    currentServerIndex = 0;
+                    currentChannelIndex = 0;
+                    loadServers();
+                    showStats();
+                } catch (error) {
+                    showError('Failed to parse JSON file: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
 
         function loadServers() {
             const serverList = document.getElementById('serverList');
@@ -442,6 +504,7 @@
                     document.querySelectorAll('.server-icon').forEach(s => s.classList.remove('active'));
                     serverIcon.classList.add('active');
                     currentServerIndex = index;
+                    currentChannelIndex = 0;
                     loadChannels(index);
                 });
 
@@ -455,124 +518,144 @@
         }
 
         function loadChannels(serverIndex) {
-            const serverData = discordData[serverIndex];
-            const serverHeader = document.getElementById('serverHeader');
-            const channelsList = document.getElementById('channelsList');
-
-            serverHeader.textContent = serverData.guild.name;
-            channelsList.innerHTML = '';
-
-            if (serverData.channels.length === 0) {
-                channelsList.innerHTML = '<div style="padding: 16px; color: #72767d;">No channels available</div>';
-                return;
-            }
-
-            serverData.channels.forEach((channel, index) => {
-                const channelItem = document.createElement('div');
-                channelItem.className = 'channel-item';
+            try {
+                const serverData = discordData[serverIndex];
+                if (!serverData) {
+                    showError('Server data not found');
+                    return;
+                }
                 
-                if (index === 0) {
-                    channelItem.classList.add('active');
+                const serverHeader = document.getElementById('serverHeader');
+                const channelsList = document.getElementById('channelsList');
+
+                serverHeader.textContent = serverData.guild.name;
+                channelsList.innerHTML = '';
+
+                if (!serverData.channels || serverData.channels.length === 0) {
+                    channelsList.innerHTML = '<div style="padding: 16px; color: #72767d;">No channels available</div>';
+                    return;
                 }
 
-                channelItem.innerHTML = `
-                    <span class="channel-icon">#</span>
-                    <span class="channel-name">${escapeHtml(channel.name)}</span>
-                    <span class="message-count">${channel.messageCount}</span>
-                `;
+                serverData.channels.forEach((channel, index) => {
+                    const channelItem = document.createElement('div');
+                    channelItem.className = 'channel-item';
+                    
+                    if (index === 0) {
+                        channelItem.classList.add('active');
+                    }
 
-                channelItem.addEventListener('click', () => {
-                    document.querySelectorAll('.channel-item').forEach(c => c.classList.remove('active'));
-                    channelItem.classList.add('active');
-                    currentChannelIndex = index;
-                    loadMessages(serverIndex, index);
+                    channelItem.innerHTML = `
+                        <span class="channel-icon">#</span>
+                        <span class="channel-name">${escapeHtml(channel.name)}</span>
+                        <span class="message-count">${channel.messageCount}</span>
+                    `;
+
+                    channelItem.addEventListener('click', () => {
+                        document.querySelectorAll('.channel-item').forEach(c => c.classList.remove('active'));
+                        channelItem.classList.add('active');
+                        currentChannelIndex = index;
+                        loadMessages(serverIndex, index);
+                    });
+
+                    channelsList.appendChild(channelItem);
                 });
 
-                channelsList.appendChild(channelItem);
-            });
-
-            // Load first channel by default
-            if (serverData.channels.length > 0) {
-                loadMessages(serverIndex, 0);
+                // Load first channel by default
+                if (serverData.channels.length > 0) {
+                    loadMessages(serverIndex, 0);
+                }
+            } catch (error) {
+                console.error('Error loading channels:', error);
+                showError('Failed to load channels: ' + error.message);
             }
         }
 
         function loadMessages(serverIndex, channelIndex) {
-            const serverData = discordData[serverIndex];
-            const channel = serverData.channels[channelIndex];
-            const chatHeader = document.getElementById('chatHeader');
-            const messagesContainer = document.getElementById('messagesContainer');
+            try {
+                const serverData = discordData[serverIndex];
+                if (!serverData || !serverData.channels || !serverData.channels[channelIndex]) {
+                    showError('Channel data not found');
+                    return;
+                }
+                
+                const channel = serverData.channels[channelIndex];
+                const chatHeader = document.getElementById('chatHeader');
+                const messagesContainer = document.getElementById('messagesContainer');
 
-            chatHeader.innerHTML = `
-                <span class="channel-icon">#</span>
-                <span>${escapeHtml(channel.name)}</span>
-            `;
-
-            messagesContainer.innerHTML = '';
-
-            if (channel.messages.length === 0) {
-                messagesContainer.innerHTML = '<div class="loading">No messages in this channel</div>';
-                return;
-            }
-
-            // Reverse to show oldest first
-            const messages = [...channel.messages].reverse();
-
-            messages.forEach(msg => {
-                const messageDiv = document.createElement('div');
-                messageDiv.className = 'message';
-
-                const avatarInitial = msg.author.username.charAt(0).toUpperCase();
-                const timestamp = new Date(msg.timestamp).toLocaleString();
-
-                let messageHTML = `
-                    <div class="message-avatar">${avatarInitial}</div>
-                    <div class="message-content">
-                        <div class="message-header">
-                            <span class="message-author ${msg.author.bot ? 'bot' : ''}">${escapeHtml(msg.author.username)}</span>
-                            ${msg.author.bot ? '<span class="bot-tag">BOT</span>' : ''}
-                            <span class="message-timestamp">${timestamp}</span>
-                        </div>
-                        <div class="message-text">${escapeHtml(msg.content) || '<em style="color: #72767d;">No text content</em>'}</div>
+                chatHeader.innerHTML = `
+                    <span class="channel-icon">#</span>
+                    <span>${escapeHtml(channel.name)}</span>
                 `;
 
-                // Attachments
-                if (msg.attachments && msg.attachments.length > 0) {
-                    msg.attachments.forEach(att => {
-                        messageHTML += `
-                            <div class="message-attachment">
-                                ${att.filename.match(/\.(jpg|jpeg|png|gif|webp)$/i) 
-                                    ? `<img src="${att.url}" alt="${escapeHtml(att.filename)}" />`
-                                    : `<a href="${att.url}" target="_blank">📎 ${escapeHtml(att.filename)} (${formatBytes(att.size)})</a>`
-                                }
+                messagesContainer.innerHTML = '';
+
+                if (channel.messages.length === 0) {
+                    messagesContainer.innerHTML = '<div class="loading">No messages in this channel</div>';
+                    return;
+                }
+
+                // Reverse to show oldest first
+                const messages = [...channel.messages].reverse();
+
+                messages.forEach(msg => {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = 'message';
+
+                    const avatarInitial = msg.author.username.charAt(0).toUpperCase();
+                    const timestamp = new Date(msg.timestamp).toLocaleString();
+
+                    let messageHTML = `
+                        <div class="message-avatar">${avatarInitial}</div>
+                        <div class="message-content">
+                            <div class="message-header">
+                                <span class="message-author ${msg.author.bot ? 'bot' : ''}">${escapeHtml(msg.author.username)}</span>
+                                ${msg.author.bot ? '<span class="bot-tag">BOT</span>' : ''}
+                                <span class="message-timestamp">${timestamp}</span>
                             </div>
-                        `;
-                    });
-                }
+                            <div class="message-text">${escapeHtml(msg.content) || '<em style="color: #72767d;">No text content</em>'}</div>
+                    `;
 
-                // Embeds
-                if (msg.embeds && msg.embeds.length > 0) {
-                    msg.embeds.forEach(embed => {
-                        messageHTML += '<div class="message-embed">📰 Embed content</div>';
-                    });
-                }
+                    // Attachments
+                    if (msg.attachments && msg.attachments.length > 0) {
+                        msg.attachments.forEach(att => {
+                            messageHTML += `
+                                <div class="message-attachment">
+                                    ${att.filename.match(/\.(jpg|jpeg|png|gif|webp)$/i) 
+                                        ? `<img src="${att.url}" alt="${escapeHtml(att.filename)}" />`
+                                        : `<a href="${att.url}" target="_blank">📎 ${escapeHtml(att.filename)} (${formatBytes(att.size)})</a>`
+                                    }
+                                </div>
+                            `;
+                        });
+                    }
 
-                // Reactions
-                if (msg.reactions && msg.reactions.length > 0) {
-                    messageHTML += '<div class="message-reactions">';
-                    msg.reactions.forEach(reaction => {
-                        messageHTML += `<div class="reaction">${reaction.emoji?.name || '👍'} ${reaction.count}</div>`;
-                    });
+                    // Embeds
+                    if (msg.embeds && msg.embeds.length > 0) {
+                        msg.embeds.forEach(embed => {
+                            messageHTML += '<div class="message-embed">📰 Embed content</div>';
+                        });
+                    }
+
+                    // Reactions
+                    if (msg.reactions && msg.reactions.length > 0) {
+                        messageHTML += '<div class="message-reactions">';
+                        msg.reactions.forEach(reaction => {
+                            messageHTML += `<div class="reaction">${reaction.emoji?.name || '👍'} ${reaction.count}</div>`;
+                        });
+                        messageHTML += '</div>';
+                    }
+
                     messageHTML += '</div>';
-                }
+                    messageDiv.innerHTML = messageHTML;
+                    messagesContainer.appendChild(messageDiv);
+                });
 
-                messageHTML += '</div>';
-                messageDiv.innerHTML = messageHTML;
-                messagesContainer.appendChild(messageDiv);
-            });
-
-            // Scroll to bottom
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                // Scroll to bottom
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            } catch (error) {
+                console.error('Error loading messages:', error);
+                showError('Failed to load messages: ' + error.message);
+            }
         }
 
         function showStats() {

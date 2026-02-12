@@ -45,7 +45,7 @@ An interactive Node.js tool to extract messages from your Discord servers. This 
 
 3. Set up your environment variables:
    ```bash
-   cp .env.example .env
+   cp .env.dist .env
    ```
    Then edit `.env` with your Discord credentials (see Configuration section)
 
